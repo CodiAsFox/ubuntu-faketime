@@ -1,37 +1,48 @@
-FROM ubuntu:latest
-RUN apt-get update && apt-get install -y --no-install-recommends apt-utils build-essential sudo git ca-certificates
-RUN git clone https://github.com/wolfcw/libfaketime /libfaketime
+# ----------------------------------------
+# Builder Stage - build libfaketime
+# ----------------------------------------
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends build-essential git ca-certificates && \
+  git clone https://github.com/wolfcw/libfaketime /libfaketime
+
 WORKDIR /libfaketime
-RUN make \
-  && make install
 
-# Library is in
-# - /usr/local/lib/faketime/libfaketimeMT.so.1
-# - /usr/local/lib/faketime/libfaketime.so.1
+RUN make && make install
 
-# Build the image just to store the file
+# ----------------------------------------
+# Verify libfaketime in Ubuntu
+# ----------------------------------------
+FROM ubuntu:22.04 AS verify-date
 
-FROM scratch
-COPY --from=0 /usr/local/lib/faketime/libfaketimeMT.so.1 /faketime.so
+COPY --from=builder /usr/local/lib/faketime/libfaketimeMT.so.1 /lib/faketime.so
 
-# Verify in Ubuntu
+ENV LD_PRELOAD=/lib/faketime.so \
+  FAKETIME="-15d" \
+  DONT_FAKE_MONOTONIC=1
 
-FROM ubuntu:latest
-COPY --from=1 /faketime.so /lib/faketime.so
-ENV LD_PRELOAD=/lib/faketime.so
-ENV FAKETIME="-15d"
-ENV DONT_FAKE_MONOTONIC=1
+# This should show a date ~15 days in the past
 RUN date
 
-# Verify with Java
+# ----------------------------------------
+# Verify with Java/Groovy
+# ----------------------------------------
+FROM groovy:jre AS verify-java
 
-FROM groovy:jre
-COPY --from=1 /faketime.so /lib/faketime.so
-ENV LD_PRELOAD=/lib/faketime.so
-ENV FAKETIME="-15d"
-ENV DONT_FAKE_MONOTONIC=1
-RUN groovy -e "new Date();"
+COPY --from=builder /usr/local/lib/faketime/libfaketimeMT.so.1 /lib/faketime.so
 
-# Build the final image
-FROM scratch
-COPY --from=0 /usr/local/lib/faketime/libfaketimeMT.so.1 /faketime.so
+ENV LD_PRELOAD=/lib/faketime.so \
+  FAKETIME="-15d" \
+  DONT_FAKE_MONOTONIC=1
+
+RUN groovy -e "println new Date()"
+
+# ----------------------------------------
+# Final Minimal Image
+# ----------------------------------------
+FROM scratch AS faketime-runtime
+
+COPY --from=builder /usr/local/lib/faketime/libfaketimeMT.so.1 /faketime.so
