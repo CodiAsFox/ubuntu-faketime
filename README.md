@@ -1,4 +1,4 @@
-Alpine libfaketime
+Alpine libfaketime Multi-Arch Compatible
 ==================
 A simple image containing [libfaketime](https://github.com/wolfcw/libfaketime) built with Alpine build tools for use with multistage builds.
 
@@ -8,7 +8,7 @@ Only the multithreaded version is used and stored as `/faketime.so`.
 
 ## Usage
 
-The `Dockerfile` used to build shows how the image is built and tested.  However to use it in a multisage build the `Dockerfile` using the `COPY --from=trajano/alpine-libfaketime` and setting the proper environment variables. 
+The `Dockerfile` used to build shows how the image is built and tested.  However to use it in a multisage build the `Dockerfile` using the `COPY --from=trajano/alpine-libfaketime` and setting the proper environment variables.
 
 ### With simple command line apps
 

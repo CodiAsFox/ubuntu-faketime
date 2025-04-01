@@ -3,7 +3,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends apt-utils build
 RUN git clone https://github.com/wolfcw/libfaketime /libfaketime
 WORKDIR /libfaketime
 RUN make \
- && make install
+  && make install
 
 # Library is in
 # - /usr/local/lib/faketime/libfaketimeMT.so.1
@@ -19,7 +19,7 @@ COPY --from=0 /usr/local/lib/faketime/libfaketimeMT.so.1 /faketime.so
 FROM ubuntu:latest
 COPY --from=1 /faketime.so /lib/faketime.so
 ENV LD_PRELOAD=/lib/faketime.so
-ENV FAKETIME="-15d" 
+ENV FAKETIME="-15d"
 ENV DONT_FAKE_MONOTONIC=1
 RUN date
 
@@ -28,7 +28,7 @@ RUN date
 FROM groovy:jre
 COPY --from=1 /faketime.so /lib/faketime.so
 ENV LD_PRELOAD=/lib/faketime.so
-ENV FAKETIME="-15d" 
+ENV FAKETIME="-15d"
 ENV DONT_FAKE_MONOTONIC=1
 RUN groovy -e "new Date();"
 
